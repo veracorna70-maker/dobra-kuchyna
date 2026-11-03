@@ -1,0 +1,376 @@
+<!doctype html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Dobrá kuchyňa – obedy</title>
+<style>
+  :root {
+    --bg: #fbf7f0;
+    --card: #ffffff;
+    --ink: #1f1a14;
+    --muted: #5c5247;
+    --line: #e4dccf;
+    --brand: #b5121b;
+    --brand-ink: #ffffff;
+    --accent: #f4c400;
+    --ok: #1d6b35;
+    --soft: #fff4d6;
+  }
+  * { box-sizing: border-box; }
+  html { font-size: 20px; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    line-height: 1.45;
+  }
+  .demo-bar {
+    background: #222; color: #fff; text-align: center;
+    font-size: .75rem; padding: 6px 16px;
+  }
+  header {
+    background: var(--brand); color: var(--brand-ink);
+    padding: 18px 16px 20px; text-align: center;
+  }
+  header h1 { margin: 0; font-size: 1.7rem; letter-spacing: .5px; }
+  header p { margin: 4px 0 0; font-size: 1rem; opacity: .95; }
+  .call {
+    display: inline-flex; align-items: center; gap: 10px;
+    margin-top: 14px; background: var(--accent); color: #1f1a14;
+    font-weight: 800; font-size: 1.1rem; text-decoration: none;
+    padding: 12px 22px; border-radius: 999px;
+  }
+  main { max-width: 760px; margin: 0 auto; padding: 0 16px 140px; }
+  .info {
+    background: var(--soft); border: 2px solid #f0dc9c; border-radius: 14px;
+    padding: 14px 16px; margin: 18px 0; font-size: .95rem;
+  }
+  .info b { color: var(--brand); }
+  .days {
+    position: sticky; top: 0; z-index: 5; background: var(--bg);
+    display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px;
+    padding: 10px 0;
+  }
+  .days button {
+    font: inherit; font-weight: 800; font-size: .95rem;
+    border: 2px solid var(--line); background: var(--card); color: var(--ink);
+    border-radius: 12px; padding: 10px 2px; cursor: pointer; line-height: 1.15;
+  }
+  .days button small { display: block; font-weight: 500; font-size: .7rem; color: var(--muted); }
+  .days button[aria-selected="true"] { background: var(--brand); border-color: var(--brand); color: #fff; }
+  .days button[aria-selected="true"] small { color: #fff; }
+  .days button .dot {
+    display: inline-block; min-width: 1.2em; margin-left: 2px;
+    background: var(--accent); color: #1f1a14; border-radius: 999px; font-size: .7rem; padding: 0 5px;
+  }
+  h2 { font-size: 1.35rem; margin: 10px 0 6px; }
+  .soup { font-size: 1.05rem; margin: 0 0 14px; }
+  .soup span { font-weight: 700; }
+  .meal {
+    background: var(--card); border: 2px solid var(--line); border-radius: 16px;
+    padding: 14px 14px 12px; margin-bottom: 12px;
+    display: grid; grid-template-columns: 3rem 1fr; gap: 12px;
+  }
+  .meal.chosen { border-color: var(--ok); box-shadow: 0 0 0 2px var(--ok) inset; }
+  .num {
+    width: 3rem; height: 3rem; border-radius: 50%; background: var(--brand); color: #fff;
+    display: flex; align-items: center; justify-content: center; font-size: 1.4rem; font-weight: 800;
+  }
+  .meal h3 { margin: 0; font-size: 1.1rem; line-height: 1.3; }
+  .side { color: var(--muted); font-size: .95rem; margin: 2px 0 6px; }
+  .meta { font-size: .78rem; color: var(--muted); }
+  .row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+  .price { font-size: 1.3rem; font-weight: 800; }
+  .qty { display: flex; align-items: center; gap: 8px; }
+  .qty button {
+    width: 3rem; height: 3rem; border-radius: 12px; border: 2px solid var(--brand);
+    background: #fff; color: var(--brand); font-size: 1.6rem; font-weight: 800; cursor: pointer;
+  }
+  .qty button.plus { background: var(--brand); color: #fff; }
+  .qty output { min-width: 1.6rem; text-align: center; font-size: 1.4rem; font-weight: 800; }
+  .extras { background: var(--card); border: 2px dashed var(--line); border-radius: 16px; padding: 12px 14px; margin-bottom: 12px; }
+  .extras .row { margin-top: 6px; }
+  .extras h3 { font-size: 1rem; margin: 0; }
+  .basket {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 10;
+    background: #fff; border-top: 3px solid var(--brand);
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+  }
+  .basket-in { max-width: 760px; margin: 0 auto; display: flex; align-items: center; gap: 12px; justify-content: space-between; }
+  .basket .sum { font-size: 1rem; }
+  .basket .sum b { font-size: 1.3rem; }
+  .big {
+    font: inherit; font-size: 1.15rem; font-weight: 800; border: 0; border-radius: 14px;
+    background: var(--ok); color: #fff; padding: 14px 22px; cursor: pointer;
+  }
+  .big:disabled { background: #b9b2a8; cursor: not-allowed; }
+  section[hidden] { display: none; }
+  .form label { display: block; font-weight: 700; margin: 14px 0 4px; }
+  .form input, .form textarea {
+    width: 100%; font: inherit; font-size: 1.05rem; padding: 12px; border-radius: 12px;
+    border: 2px solid #b8ad9d; background: #fff; color: var(--ink);
+  }
+  .form input:focus, .form textarea:focus { outline: 3px solid var(--accent); border-color: var(--brand); }
+  .summary { background: var(--card); border: 2px solid var(--line); border-radius: 16px; padding: 12px 16px; }
+  .summary h3 { margin: 10px 0 4px; font-size: 1rem; color: var(--brand); }
+  .summary ul { margin: 0; padding-left: 1.1rem; }
+  .summary .total { border-top: 2px solid var(--line); margin-top: 10px; padding-top: 8px; font-size: 1.2rem; font-weight: 800; }
+  .warn { color: var(--brand); font-weight: 700; font-size: .9rem; margin: 6px 0 0; }
+  .back { font: inherit; background: none; border: 0; color: var(--brand); font-weight: 700; padding: 10px 0; cursor: pointer; font-size: 1rem; }
+  .done { text-align: center; padding: 30px 0; }
+  .done .check { font-size: 4rem; line-height: 1; color: var(--ok); }
+  .allergens { font-size: .75rem; color: var(--muted); margin: 24px 0; }
+  .allergens summary { cursor: pointer; font-weight: 700; font-size: .9rem; }
+  @media (max-width: 420px) {
+    html { font-size: 18px; }
+    .meal { grid-template-columns: 2.6rem 1fr; }
+    .num { width: 2.6rem; height: 2.6rem; font-size: 1.2rem; }
+  }
+</style>
+</head>
+<body>
+<div class="demo-bar">Návrh od WebCorna – ukážka, nie je to oficiálna stránka. Objednávky sa neodosielajú.</div>
+
+<header>
+  <h1>Dobrá kuchyňa</h1>
+  <p>Obedy s donáškou až k vám domov</p>
+  <a class="call" href="tel:+421902736247">📞 Radšej zavolám: 0902 736 247</a>
+</header>
+
+<main>
+  <!-- KROK 1: výber jedál -->
+  <section id="step-menu">
+    <div class="info">
+      Objednávajte <b>do 11:00</b>. Najmenej <b>2 obedy</b> na donášku.<br>
+      Balné a donáška sú <b>v cene</b>. Hlavné jedlo vo vákuovom obale, polievka v miske.
+    </div>
+
+    <nav class="days" id="days" role="tablist" aria-label="Dni v týždni"></nav>
+
+    <div id="day-view"></div>
+
+    <details class="allergens">
+      <summary>Zoznam alergénov</summary>
+      <p id="allergen-list"></p>
+    </details>
+  </section>
+
+  <!-- KROK 2: kontakt -->
+  <section id="step-form" hidden>
+    <button class="back" data-go="menu">← Späť na menu</button>
+    <h2>Kam vám obed prinesieme?</h2>
+    <div class="summary" id="summary-form"></div>
+    <form class="form" id="order-form" novalidate>
+      <label for="f-name">Meno a priezvisko</label>
+      <input id="f-name" name="name" autocomplete="name" required>
+      <label for="f-phone">Telefón</label>
+      <input id="f-phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" required>
+      <label for="f-address">Ulica a číslo domu, obec</label>
+      <input id="f-address" name="address" autocomplete="street-address" required>
+      <label for="f-note">Poznámka (napr. zvoniť na susedov, 2. poschodie)</label>
+      <textarea id="f-note" name="note" rows="2"></textarea>
+      <p class="warn" id="form-warn" hidden>Prosím, vyplňte meno, telefón a adresu.</p>
+      <p style="margin-top:18px"><button class="big" type="submit" style="width:100%">✔ Odoslať objednávku</button></p>
+      <p class="meta">Adresu si zapamätá tento telefón, nabudúce ju nemusíte písať.</p>
+    </form>
+  </section>
+
+  <!-- KROK 3: potvrdenie -->
+  <section id="step-done" hidden>
+    <div class="done">
+      <div class="check">✔</div>
+      <h2>Ďakujeme, objednávka je prijatá</h2>
+      <p>Ak by bolo niečo nejasné, zavoláme vám.</p>
+    </div>
+    <div class="summary" id="summary-done"></div>
+    <p style="text-align:center;margin-top:20px"><button class="big" data-go="new">Nová objednávka</button></p>
+  </section>
+</main>
+
+<div class="basket" id="basket">
+  <div class="basket-in">
+    <div class="sum" id="basket-sum">Zatiaľ nič nevybrané</div>
+    <button class="big" id="basket-go" disabled>Pokračovať →</button>
+  </div>
+</div>
+
+<script>
+// Menu z PDF „5.10.pdf“ (týždeň 5. – 9. 10. 2026). V hotovej aplikácii sa naplní automaticky z nahraného súboru.
+const MENU = {
+  week: "5. – 9. októbra 2026",
+  extras: [
+    { id: "drzkova", name: "Držková polievka k menu", price: 1.50 },
+    { id: "polovicne", name: "Polovičné menu", price: 4.00 }
+  ],
+  days: [
+    { key: "po", name: "Pondelok", date: "5. 10.", soups: ["Česká kulajda"], meals: [
+      ["150/160 g", "Segedínsky bravčový guláš", "knedľa", 6.90, "1, 3, 7"],
+      ["120/150 g", "Prírodné kuracie prsia s bazalkovo-maslovou omáčkou", "ryža, šalátik", 6.50, "1"],
+      ["150/150 g", "Bravčové rizoto so zeleninou, posypané syrom", "kyslá uhorka", 6.50, "1, 7, 9"],
+      ["150/250 g", "Vyprážaný kurací rezeň v parmezánovej strúhanke", "zemiaková kaša, šalát", 6.90, "1, 3, 7"],
+      ["150/150 g", "Hovädzí tokáň na červenom víne", "ryža alebo tarhoňa, cvikla", 6.90, "1, 3"],
+      ["150/250 g", "Marinovaný bravčový steak z krkovičky so slaninkou a volským okom", "zemiaková kaša, kyslá uhorka", 6.90, "1, 3"],
+      ["350 g", "Zemiakové šuľance plnené makom, s maslom", "posypané makom", 6.50, "1, 3"]
+    ]},
+    { key: "ut", name: "Utorok", date: "6. 10.", soups: ["Hokaido polievka"], meals: [
+      ["120/160 g", "Pečená krkovička v hríbovo-smotanovej omáčke", "knedľa", 6.90, "1, 3, 7"],
+      ["120/150 g", "Plnené kuracie prsia (šunka, niva)", "ryža, šalátik", 6.50, "1, 7"],
+      ["150/150 g", "Krémové kuracie soté so špenátom a sušenými paradajkami", "½ ryža, ½ hranolky, šalátik", 6.50, "1, 7"],
+      ["150/250 g", "Vyprážaný holandský mletý bravčový rezeň so syrom", "zemiaková kaša, šalát", 6.90, "1, 3, 7"],
+      ["400/50 g", "Držkový guláš so zeleninou a zemiakmi", "chlieb", 6.50, "1"],
+      ["120/250 g", "Novohradské bravčové pliecko na šampiňónoch s lečom", "zemiaková kaša", 6.50, "1"],
+      ["200/250 g", "Vyprážaná cuketka v jogurtovom cestíčku", "varené zemiaky, tatárska omáčka", 6.50, "1, 3, 7"]
+    ]},
+    { key: "st", name: "Streda", date: "7. 10.", soups: ["Kurací vývar", "Gulášová"], meals: [
+      ["120/160 g", "Hovädzia falošná sviečková na smotane", "knedľa", 6.90, "1, 3, 7"],
+      ["120/150 g", "Zapekané kuracie prsia s paradajkou a mozzarellou", "ryža, šalátik", 6.50, "1, 7"],
+      ["150/150 g", "Plnená bravčová panenka so sušenou slivkou v slaninkovom kabátiku", "½ ryža, ½ opekané zemiaky", 6.90, "1, 7"],
+      ["150/250 g", "Vyprážaný bravčový rezeň", "zemiakový šalát s majonézou", 6.90, "1, 3, 7"],
+      ["450/120 g", "Strapačky s kyslou kapustou, slaninkou a pečenou krkovičkou", "", 6.50, "1, 3, 7"],
+      ["250/250 g", "Pečené kuracie stehienka (mikrofóny)", "pečené zemiačky v šupke, coleslaw", 6.50, ""],
+      ["150/150/250 g", "Vyprážaný pastiersky syr", "hranolky alebo varené zemiaky, tatárska omáčka", 6.50, "1, 3, 7"]
+    ]},
+    { key: "st2", name: "Štvrtok", date: "8. 10.", soups: ["Hrachová s párkom"], meals: [
+      ["120/160 g", "Pečená krkovička, kyslá kapusta", "knedľa", 6.90, "1, 3, 7"],
+      ["120/150 g", "Prírodné kuracie prsia v slivkovo-smotanovej omáčke", "ryža, šalátik", 6.50, "1, 7"],
+      ["120/150 g", "Španielsky bravčový vtáčik (krkovička)", "ryža, cvikla", 6.50, "1, 3"],
+      ["120/250 g", "Černohorský duo rezeň (1 kurací, 1 bravčový)", "zemiaková kaša s pažítkou, syr, kyslá uhorka", 6.90, "1, 3, 7"],
+      ["150/250 g", "Bravčový paprikáš na smotane", "cestoviny – kolienka", 6.50, "1, 3, 7"],
+      ["120/250 g", "Hovädzia falošná sviečková na burgundský spôsob", "ryža, cvikla", 6.90, "1, 9"],
+      ["400 g", "Zemiakové halušky so syrokrémom, pečenou slaninkou a jarnou cibuľkou", "", 6.50, "1, 3, 7"]
+    ]},
+    { key: "pi", name: "Piatok", date: "9. 10.", soups: ["Kurací vývar", "Sedliacka polievka"], meals: [
+      ["150/160 g", "Plnená paprika v paradajkovej omáčke", "knedľa", 6.90, "1, 3, 7"],
+      ["260/150 g", "Prírodné kuracie prsia v dubákovej omáčke", "ryža, šalátik", 6.50, "1, 11"],
+      ["120/150 g", "Pražský hovädzí závitok (plnený praženicou)", "ryža, cvikla", 6.90, "1, 3"],
+      ["150/250 g", "Vyprážaný kurací rezeň v syrovom cestíčku", "zemiaková kaša, šalátik", 6.90, "1, 3, 7"],
+      ["150/250 g", "Vyprážané rybie filé", "varené zemiaky s maslom, šalátik", 6.50, "1, 4, 7"],
+      ["120/250/150 g", "Vyprážaný hermelín", "varené alebo opekané zemiaky, tatárska omáčka", 6.50, "1, 3, 7"],
+      ["320 g", "Domáce lievance so škoricovými jabĺčkami a mascarpone", "", 6.50, "1, 3, 7"]
+    ]}
+  ],
+  allergens: "1. Obilniny obsahujúce lepok · 2. Kôrovce · 3. Vajcia · 4. Ryby · 5. Arašidy · 6. Sója · 7. Mlieko (vrátane laktózy) · 8. Orechy · 9. Zeler · 10. Horčica · 11. Sezam · 12. Oxid siričitý · 13. Vlčí bôb · 14. Mäkkýše"
+};
+
+const MIN_MEALS = 2;
+const order = {}; // { "po-1": 2, "po-drzkova": 1, ... }
+let currentDay = 0;
+const eur = n => n.toFixed(2).replace(".", ",") + " €";
+const $ = s => document.querySelector(s);
+const esc = s => s.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+function store(key, val) {
+  try { if (val === undefined) return JSON.parse(localStorage.getItem(key) || "null"); localStorage.setItem(key, JSON.stringify(val)); } catch (e) { return null; }
+}
+
+function mealsOfDay(d) {
+  return MENU.days[d].meals.reduce((n, _, i) => n + (order[MENU.days[d].key + "-" + (i + 1)] || 0), 0)
+    + (order[MENU.days[d].key + "-polovicne"] || 0);
+}
+
+function renderDays() {
+  $("#days").innerHTML = MENU.days.map((d, i) => {
+    const n = mealsOfDay(i);
+    return `<button role="tab" aria-selected="${i === currentDay}" data-day="${i}">
+      ${d.name.slice(0, 2)}${n ? `<span class="dot">${n}</span>` : ""}<small>${d.date}</small></button>`;
+  }).join("");
+}
+
+function qtyControl(id) {
+  const q = order[id] || 0;
+  return `<div class="qty">
+    <button type="button" data-minus="${id}" aria-label="Ubrať">−</button>
+    <output aria-live="polite">${q}</output>
+    <button type="button" class="plus" data-plus="${id}" aria-label="Pridať">+</button></div>`;
+}
+
+function renderDay() {
+  const d = MENU.days[currentDay];
+  const n = mealsOfDay(currentDay);
+  let html = `<h2>${d.name} ${d.date}</h2>
+    <p class="soup">Polievka: <span>${d.soups.join(" alebo ")}</span></p>`;
+  if (n > 0 && n < MIN_MEALS) html += `<p class="warn">Na donášku treba aspoň ${MIN_MEALS} obedy. Pridajte ešte ${MIN_MEALS - n}.</p>`;
+  html += d.meals.map((m, i) => {
+    const id = d.key + "-" + (i + 1);
+    return `<article class="meal ${order[id] ? "chosen" : ""}">
+      <div class="num">${i + 1}</div>
+      <div>
+        <h3>${m[1]}</h3>
+        ${m[2] ? `<p class="side">${m[2]}</p>` : ""}
+        <p class="meta">${m[0]}${m[4] ? " · alergény " + m[4] : ""}</p>
+        <div class="row"><span class="price">${eur(m[3])}</span>${qtyControl(id)}</div>
+      </div></article>`;
+  }).join("");
+  html += `<div class="extras"><h3>Navyše</h3>` + MENU.extras.map(x =>
+    `<div class="row"><span>${x.name} <b>${eur(x.price)}</b></span>${qtyControl(d.key + "-" + x.id)}</div>`).join("") + `</div>`;
+  $("#day-view").innerHTML = html;
+}
+
+function lines() {
+  const out = [];
+  MENU.days.forEach(d => {
+    const items = [];
+    d.meals.forEach((m, i) => { const q = order[d.key + "-" + (i + 1)]; if (q) items.push({ q, t: `č. ${i + 1} ${m[1]}`, p: m[3] }); });
+    MENU.extras.forEach(x => { const q = order[d.key + "-" + x.id]; if (q) items.push({ q, t: x.name, p: x.price }); });
+    if (items.length) out.push({ day: `${d.name} ${d.date}`, items });
+  });
+  return out;
+}
+
+function total() { return lines().reduce((s, d) => s + d.items.reduce((a, i) => a + i.q * i.p, 0), 0); }
+
+function problemDays() {
+  return MENU.days.map((d, i) => ({ d, n: mealsOfDay(i) })).filter(x => x.n > 0 && x.n < MIN_MEALS);
+}
+
+function renderBasket() {
+  const meals = MENU.days.reduce((s, _, i) => s + mealsOfDay(i), 0);
+  const t = total();
+  $("#basket-sum").innerHTML = t ? `${meals} ${meals === 1 ? "obed" : meals < 5 ? "obedy" : "obedov"} · <b>${eur(t)}</b>` : "Zatiaľ nič nevybrané";
+  $("#basket-go").disabled = !meals || problemDays().length > 0;
+}
+
+function summaryHTML() {
+  return lines().map(d => `<h3>${d.day}</h3><ul>${d.items.map(i => `<li>${i.q}× ${i.t}</li>`).join("")}</ul>`).join("")
+    + `<p class="total">Spolu: ${eur(total())}</p>`;
+}
+
+function show(step) {
+  ["menu", "form", "done"].forEach(s => $("#step-" + s).hidden = s !== step);
+  $("#basket").style.display = step === "menu" ? "" : "none";
+  window.scrollTo(0, 0);
+}
+
+function refresh() { renderDays(); renderDay(); renderBasket(); }
+
+document.addEventListener("click", e => {
+  const t = e.target.closest("button");
+  if (!t) return;
+  if (t.dataset.day !== undefined) { currentDay = +t.dataset.day; refresh(); }
+  if (t.dataset.plus) { order[t.dataset.plus] = (order[t.dataset.plus] || 0) + 1; refresh(); }
+  if (t.dataset.minus && order[t.dataset.minus]) { order[t.dataset.minus]--; if (!order[t.dataset.minus]) delete order[t.dataset.minus]; refresh(); }
+  if (t.id === "basket-go") { $("#summary-form").innerHTML = summaryHTML(); show("form"); }
+  if (t.dataset.go === "menu") show("menu");
+  if (t.dataset.go === "new") { Object.keys(order).forEach(k => delete order[k]); currentDay = 0; refresh(); show("menu"); }
+});
+
+$("#order-form").addEventListener("submit", e => {
+  e.preventDefault();
+  const f = e.target;
+  const ok = ["name", "phone", "address"].every(n => f[n].value.trim());
+  $("#form-warn").hidden = ok;
+  if (!ok) return;
+  store("dk-customer", { name: f.name.value, phone: f.phone.value, address: f.address.value });
+  $("#summary-done").innerHTML = summaryHTML()
+    + `<p><b>${esc(f.name.value)}</b>, ${esc(f.phone.value)}<br>${esc(f.address.value)}${f.note.value ? "<br><i>" + esc(f.note.value) + "</i>" : ""}</p>`;
+  show("done");
+});
+
+const saved = store("dk-customer");
+if (saved) { $("#f-name").value = saved.name || ""; $("#f-phone").value = saved.phone || ""; $("#f-address").value = saved.address || ""; }
+$("#allergen-list").textContent = MENU.allergens;
+refresh();
+</script>
+</body>
+</html>
