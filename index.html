@@ -130,7 +130,7 @@
 </style>
 </head>
 <body>
-<div class="demo-bar">Návrh od WebCorna – ukážka, nie je to oficiálna stránka. Objednávky sa neodosielajú.</div>
+<div class="demo-bar">Návrh od WebCorna – ukážka, nie je to oficiálna stránka.</div>
 
 <header>
   <h1>Dobrá kuchyňa</h1>
@@ -195,9 +195,15 @@
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script>
-// Menu z PDF „5.10.pdf“ (týždeň 5. – 9. 10. 2026). V hotovej aplikácii sa naplní automaticky z nahraného súboru.
-const MENU = {
+// Záložné menu z PDF „5.10.pdf“ (týždeň 5. – 9. 10. 2026). Keď je v databáze publikované menu, zobrazí sa to.
+const SUPABASE_URL = "https://plnzcnrpnnqslvncvstu.supabase.co";
+const SUPABASE_KEY = "sb_publishable_clIQFy2iqJ1QehmSyc342Q_Abgg0Byu";
+const SLUG = new URLSearchParams(location.search).get("r") || "dobra-kuchyna";
+const sb = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+let restaurantId = null;
+let MENU = {
   week: "5. – 9. októbra 2026",
   extras: [
     { id: "drzkova", name: "Držková polievka k menu", price: 1.50 },
@@ -258,7 +264,7 @@ const order = {}; // { "po-1": 2, "po-drzkova": 1, ... }
 let currentDay = 0;
 const eur = n => n.toFixed(2).replace(".", ",") + " €";
 const $ = s => document.querySelector(s);
-const esc = s => s.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
 function store(key, val) {
   try { if (val === undefined) return JSON.parse(localStorage.getItem(key) || "null"); localStorage.setItem(key, JSON.stringify(val)); } catch (e) { return null; }
@@ -270,10 +276,11 @@ function mealsOfDay(d) {
 }
 
 function renderDays() {
+  $("#days").style.gridTemplateColumns = `repeat(${MENU.days.length}, 1fr)`;
   $("#days").innerHTML = MENU.days.map((d, i) => {
     const n = mealsOfDay(i);
     return `<button role="tab" aria-selected="${i === currentDay}" data-day="${i}">
-      ${d.name.slice(0, 2)}${n ? `<span class="dot">${n}</span>` : ""}<small>${d.date}</small></button>`;
+      ${esc(d.name.slice(0, 2))}${n ? `<span class="dot">${n}</span>` : ""}<small>${esc(d.date)}</small></button>`;
   }).join("");
 }
 
@@ -288,22 +295,22 @@ function qtyControl(id) {
 function renderDay() {
   const d = MENU.days[currentDay];
   const n = mealsOfDay(currentDay);
-  let html = `<h2>${d.name} ${d.date}</h2>
-    <p class="soup">Polievka: <span>${d.soups.join(" alebo ")}</span></p>`;
+  let html = `<h2>${esc(d.name)} ${esc(d.date)}</h2>
+    <p class="soup">Polievka: <span>${esc(d.soups.join(" alebo "))}</span></p>`;
   if (n > 0 && n < MIN_MEALS) html += `<p class="warn">Na donášku treba aspoň ${MIN_MEALS} obedy. Pridajte ešte ${MIN_MEALS - n}.</p>`;
   html += d.meals.map((m, i) => {
     const id = d.key + "-" + (i + 1);
     return `<article class="meal ${order[id] ? "chosen" : ""}">
       <div class="num">${i + 1}</div>
       <div>
-        <h3>${m[1]}</h3>
-        ${m[2] ? `<p class="side">${m[2]}</p>` : ""}
-        <p class="meta">${m[0]}${m[4] ? " · alergény " + m[4] : ""}</p>
+        <h3>${esc(m[1])}</h3>
+        ${m[2] ? `<p class="side">${esc(m[2])}</p>` : ""}
+        <p class="meta">${esc(m[0])}${m[4] ? " · alergény " + esc(m[4]) : ""}</p>
         <div class="row"><span class="price">${eur(m[3])}</span>${qtyControl(id)}</div>
       </div></article>`;
   }).join("");
   html += `<div class="extras"><h3>Navyše</h3>` + MENU.extras.map(x =>
-    `<div class="row"><span>${x.name} <b>${eur(x.price)}</b></span>${qtyControl(d.key + "-" + x.id)}</div>`).join("") + `</div>`;
+    `<div class="row"><span>${esc(x.name)} <b>${eur(x.price)}</b></span>${qtyControl(d.key + "-" + x.id)}</div>`).join("") + `</div>`;
   $("#day-view").innerHTML = html;
 }
 
@@ -332,7 +339,7 @@ function renderBasket() {
 }
 
 function summaryHTML() {
-  return lines().map(d => `<h3>${d.day}</h3><ul>${d.items.map(i => `<li>${i.q}× ${i.t}</li>`).join("")}</ul>`).join("")
+  return lines().map(d => `<h3>${esc(d.day)}</h3><ul>${d.items.map(i => `<li>${i.q}× ${esc(i.t)}</li>`).join("")}</ul>`).join("")
     + `<p class="total">Spolu: ${eur(total())}</p>`;
 }
 
@@ -362,6 +369,14 @@ $("#order-form").addEventListener("submit", e => {
   $("#form-warn").hidden = ok;
   if (!ok) return;
   store("dk-customer", { name: f.name.value, phone: f.phone.value, address: f.address.value });
+  if (sb && restaurantId) {
+    sb.from("orders").insert({
+      restaurant_id: restaurantId,
+      customer: { name: f.name.value, phone: f.phone.value, address: f.address.value, note: f.note.value },
+      items: lines(),
+      total: total()
+    }).then(r => { if (r.error) console.warn("Objednávku sa nepodarilo uložiť", r.error.message); });
+  }
   $("#summary-done").innerHTML = summaryHTML()
     + `<p><b>${esc(f.name.value)}</b>, ${esc(f.phone.value)}<br>${esc(f.address.value)}${f.note.value ? "<br><i>" + esc(f.note.value) + "</i>" : ""}</p>`;
   show("done");
@@ -369,8 +384,32 @@ $("#order-form").addEventListener("submit", e => {
 
 const saved = store("dk-customer");
 if (saved) { $("#f-name").value = saved.name || ""; $("#f-phone").value = saved.phone || ""; $("#f-address").value = saved.address || ""; }
-$("#allergen-list").textContent = MENU.allergens;
+function fromDb(d) {
+  return {
+    week: d.week || "",
+    extras: d.extras || MENU.extras,
+    allergens: d.allergens || MENU.allergens,
+    days: d.days.map((day, i) => ({
+      key: "d" + i, name: day.name || "", date: day.date || "", soups: day.soups || [],
+      meals: (day.meals || []).map(m => [m.grams || "", m.name || "", m.side || "", Number(m.price) || 0, m.allergens || ""])
+    }))
+  };
+}
+
+async function loadMenu() {
+  if (!sb) return;
+  try {
+    const { data, error } = await sb.from("restaurants").select("id, menus(data)").eq("slug", SLUG).maybeSingle();
+    if (error || !data) return;
+    restaurantId = data.id;
+    const m = Array.isArray(data.menus) ? data.menus[0] : data.menus;
+    if (m && m.data && Array.isArray(m.data.days) && m.data.days.length) MENU = fromDb(m.data);
+  } catch (e) { console.warn("Menu sa nepodarilo načítať, zobrazuje sa záložné.", e); }
+}
+
 refresh();
+loadMenu().then(() => { currentDay = 0; $("#allergen-list").textContent = MENU.allergens; refresh(); });
+$("#allergen-list").textContent = MENU.allergens;
 </script>
 </body>
 </html>

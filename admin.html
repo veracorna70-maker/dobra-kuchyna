@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Dobrá kuchyňa – administrácia</title>
+<style>
+  :root { --bg:#fbf7f0; --card:#fff; --ink:#1f1a14; --muted:#5c5247; --line:#e4dccf; --brand:#b5121b; --accent:#f4c400; --ok:#1d6b35; --soft:#fff4d6; }
+  * { box-sizing: border-box; }
+  html { font-size: 18px; }
+  body { margin:0; background:var(--bg); color:var(--ink); font-family: system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif; line-height:1.45; }
+  header { background:var(--brand); color:#fff; padding:14px 16px; display:flex; align-items:center; justify-content:space-between; gap:12px; }
+  header h1 { margin:0; font-size:1.2rem; }
+  header button { background:transparent; border:2px solid #fff; color:#fff; border-radius:10px; padding:6px 12px; font:inherit; font-size:.85rem; cursor:pointer; }
+  main { max-width:900px; margin:0 auto; padding:16px; }
+  .card { background:var(--card); border:2px solid var(--line); border-radius:16px; padding:16px; margin-bottom:16px; }
+  .card h2 { margin:0 0 8px; font-size:1.15rem; }
+  .muted { color:var(--muted); font-size:.85rem; }
+  label { display:block; font-weight:700; margin:12px 0 4px; }
+  input[type=email], input[type=password], input[type=text], input[type=number] { width:100%; font:inherit; padding:10px; border-radius:10px; border:2px solid #b8ad9d; background:#fff; color:var(--ink); }
+  input:focus { outline:3px solid var(--accent); border-color:var(--brand); }
+  .btn { font:inherit; font-weight:800; border:0; border-radius:12px; padding:12px 20px; cursor:pointer; background:var(--brand); color:#fff; }
+  .btn.ok { background:var(--ok); }
+  .btn.ghost { background:#fff; color:var(--brand); border:2px solid var(--brand); }
+  .btn:disabled { background:#b9b2a8; cursor:not-allowed; }
+  .msg { margin:10px 0 0; font-weight:700; }
+  .msg.err { color:var(--brand); }
+  .msg.good { color:var(--ok); }
+  .day { border:2px solid var(--line); border-radius:14px; padding:12px; margin:12px 0; background:#fffdf8; }
+  .day-head { display:grid; grid-template-columns: 1fr 1fr; gap:8px; }
+  .meal { display:grid; grid-template-columns: 90px 2fr 1.4fr 80px 90px 40px; gap:6px; margin-top:8px; align-items:center; }
+  .meal input { padding:8px; font-size:.85rem; }
+  .meal .x { border:0; background:#f3dcdc; color:var(--brand); border-radius:8px; font-weight:800; cursor:pointer; height:100%; min-height:36px; }
+  .head-row { display:grid; grid-template-columns: 90px 2fr 1.4fr 80px 90px 40px; gap:6px; font-size:.7rem; color:var(--muted); font-weight:700; margin-top:10px; }
+  .order { border-top:2px solid var(--line); padding:10px 0; font-size:.9rem; }
+  .order:first-child { border-top:0; }
+  .order ul { margin:4px 0; padding-left:1.1rem; }
+  @media (max-width: 720px) {
+    .meal, .head-row { grid-template-columns: 1fr 1fr; }
+    .head-row { display:none; }
+    .meal .x { grid-column: 1 / -1; }
+  }
+  [hidden] { display:none !important; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Dobrá kuchyňa · administrácia</h1>
+  <button id="logout" hidden>Odhlásiť sa</button>
+</header>
+
+<main>
+  <section id="login" class="card" style="max-width:420px;margin:24px auto">
+    <h2>Prihlásenie</h2>
+    <form id="login-form">
+      <label for="l-email">E-mail</label>
+      <input id="l-email" type="email" autocomplete="username" required>
+      <label for="l-pass">Heslo</label>
+      <input id="l-pass" type="password" autocomplete="current-password" required>
+      <p style="margin-top:16px"><button class="btn" style="width:100%" type="submit">Prihlásiť sa</button></p>
+      <p class="msg err" id="login-msg" hidden></p>
+    </form>
+  </section>
+
+  <section id="app" hidden>
+    <div class="card">
+      <h2>Aktuálne menu na stránke</h2>
+      <p id="status" class="muted">Načítavam…</p>
+      <p><a id="public-link" href="./" target="_blank" rel="noopener">Otvoriť stránku pre zákazníkov →</a></p>
+      <p><button class="btn ghost" id="edit-current" hidden>Upraviť publikované menu</button></p>
+    </div>
+
+    <div class="card">
+      <h2>1. Nahrať PDF s menu</h2>
+      <p class="muted">Vyberte PDF s týždenným menu. Aplikácia ho prečíta a ukáže vám náhľad na kontrolu.</p>
+      <input type="file" id="pdf" accept="application/pdf">
+      <p><button class="btn" id="parse" disabled>Prečítať menu</button></p>
+      <p class="msg" id="parse-msg" hidden></p>
+    </div>
+
+    <div class="card" id="editor" hidden>
+      <h2>2. Skontrolujte menu</h2>
+      <p class="muted">Prečítané údaje si prejdite, hlavne ceny a alergény. Chyby môžete rovno opraviť.</p>
+      <label for="d-week">Týždeň</label>
+      <input id="d-week" type="text" data-path="week">
+      <div id="draft"></div>
+      <p style="margin-top:16px"><button class="btn ok" id="publish">✔ Publikovať</button></p>
+      <p class="msg" id="publish-msg" hidden></p>
+    </div>
+
+    <div class="card">
+      <h2>Objednávky</h2>
+      <div id="orders" class="muted">Načítavam…</div>
+    </div>
+  </section>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script>
+const SUPABASE_URL = "https://plnzcnrpnnqslvncvstu.supabase.co";
+const SUPABASE_KEY = "sb_publishable_clIQFy2iqJ1QehmSyc342Q_Abgg0Byu";
+const SLUG = "dobra-kuchyna";
+const DEFAULT_EXTRAS = [
+  { id: "drzkova", name: "Držková polievka k menu", price: 1.50 },
+  { id: "polovicne", name: "Polovičné menu", price: 4.00 }
+];
+const DEFAULT_ALLERGENS = "1. Obilniny obsahujúce lepok · 2. Kôrovce · 3. Vajcia · 4. Ryby · 5. Arašidy · 6. Sója · 7. Mlieko (vrátane laktózy) · 8. Orechy · 9. Zeler · 10. Horčica · 11. Sezam · 12. Oxid siričitý · 13. Vlčí bôb · 14. Mäkkýše";
+
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const eur = n => Number(n).toFixed(2).replace(".", ",") + " €";
+let restaurant = null, current = null, draft = null, pdfFile = null;
+
+function say(sel, text, kind) {
+  const el = $(sel);
+  el.hidden = !text; el.textContent = text || "";
+  el.className = "msg" + (kind ? " " + kind : "");
+}
+
+// ---------- prihlásenie ----------
+$("#login-form").addEventListener("submit", async e => {
+  e.preventDefault();
+  say("#login-msg", "");
+  const { error } = await sb.auth.signInWithPassword({ email: $("#l-email").value.trim(), password: $("#l-pass").value });
+  if (error) return say("#login-msg", "Nesprávny e-mail alebo heslo.", "err");
+  start();
+});
+$("#logout").addEventListener("click", async () => { await sb.auth.signOut(); location.reload(); });
+
+async function start() {
+  const { data: { session } } = await sb.auth.getSession();
+  $("#login").hidden = !!session;
+  $("#app").hidden = !session;
+  $("#logout").hidden = !session;
+  if (!session) return;
+
+  const { data: r } = await sb.from("restaurants").select("id, name, slug").eq("owner_id", session.user.id).maybeSingle();
+  if (!r) { $("#status").textContent = "Tento účet nemá pridelenú prevádzku."; return; }
+  restaurant = r;
+  $("#public-link").href = "./index.html" + (r.slug === SLUG ? "" : "?r=" + encodeURIComponent(r.slug));
+  await loadCurrent();
+  loadOrders();
+}
+
+async function loadCurrent() {
+  const { data } = await sb.from("menus").select("data, updated_at").eq("restaurant_id", restaurant.id).maybeSingle();
+  current = data;
+  if (data) {
+    const when = new Date(data.updated_at).toLocaleString("sk-SK");
+    $("#status").textContent = `${data.data.week || "Menu"} · publikované ${when} · ${data.data.days.length} dní`;
+    $("#edit-current").hidden = false;
+  } else {
+    $("#status").textContent = "Zatiaľ nie je publikované žiadne menu. Na stránke sa zobrazuje ukážkové menu.";
+    $("#edit-current").hidden = true;
+  }
+}
+
+// ---------- nahratie a prečítanie PDF ----------
+$("#pdf").addEventListener("change", e => {
+  pdfFile = e.target.files[0] || null;
+  $("#parse").disabled = !pdfFile;
+  say("#parse-msg", "");
+});
+
+function toBase64(file) {
+  return new Promise((res, rej) => {
+    const fr = new FileReader();
+    fr.onload = () => res(String(fr.result).split(",")[1]);
+    fr.onerror = () => rej(fr.error);
+    fr.readAsDataURL(file);
+  });
+}
+
+$("#parse").addEventListener("click", async () => {
+  if (!pdfFile) return;
+  $("#parse").disabled = true;
+  say("#parse-msg", "Čítam menu, môže to trvať pol minúty…");
+  try {
+    const pdf_base64 = await toBase64(pdfFile);
+    const { data, error } = await sb.functions.invoke("parse-menu", { body: { pdf_base64 } });
+    if (error) {
+      let detail = "";
+      try { const j = await error.context.json(); detail = j.error + (j.detail ? ": " + j.detail : ""); } catch (_) {}
+      const nice = detail.startsWith("missing_anthropic_key") ? "Chýba kľúč pre čítanie PDF (nastavuje sa v Supabase)." :
+                   detail.startsWith("pdf_too_large") ? "PDF je príliš veľké." :
+                   detail.startsWith("forbidden") || detail.startsWith("unauthorized") ? "Na túto akciu nemáte oprávnenie, prihláste sa znova." :
+                   "Menu sa nepodarilo prečítať. " + detail;
+      return say("#parse-msg", nice, "err");
+    }
+    if (!data || !data.menu || !Array.isArray(data.menu.days) || !data.menu.days.length) return say("#parse-msg", "V PDF som nenašiel žiadne menu.", "err");
+    draft = {
+      week: data.menu.week || "",
+      days: data.menu.days,
+      extras: current?.data?.extras || DEFAULT_EXTRAS,
+      allergens: current?.data?.allergens || DEFAULT_ALLERGENS
+    };
+    say("#parse-msg", "Menu je prečítané. Skontrolujte ho nižšie.", "good");
+    openEditor();
+  } catch (err) {
+    say("#parse-msg", "Nepodarilo sa spojiť so serverom. Skúste to znova.", "err");
+  } finally {
+    $("#parse").disabled = !pdfFile;
+  }
+});
+
+$("#edit-current").addEventListener("click", () => {
+  draft = JSON.parse(JSON.stringify(current.data));
+  openEditor();
+});
+
+// ---------- úprava náhľadu ----------
+function openEditor() {
+  $("#editor").hidden = false;
+  say("#publish-msg", "");
+  $("#d-week").value = draft.week || "";
+  renderDraft();
+  $("#editor").scrollIntoView({ behavior: "smooth" });
+}
+
+function renderDraft() {
+  $("#draft").innerHTML = draft.days.map((d, i) => `
+    <div class="day">
+      <div class="day-head">
+        <div><label>Deň</label><input type="text" data-path="days.${i}.name" value="${esc(d.name)}"></div>
+        <div><label>Dátum</label><input type="text" data-path="days.${i}.date" value="${esc(d.date)}"></div>
+      </div>
+      <label>Polievky (oddeľte bodkočiarkou)</label>
+      <input type="text" data-path="days.${i}.soups" data-type="list" value="${esc((d.soups || []).join("; "))}">
+      <div class="head-row"><span>Gramáž</span><span>Jedlo</span><span>Príloha</span><span>Cena €</span><span>Alergény</span><span></span></div>
+      ${(d.meals || []).map((m, j) => `
+        <div class="meal">
+          <input type="text" data-path="days.${i}.meals.${j}.grams" value="${esc(m.grams)}" placeholder="Gramáž">
+          <input type="text" data-path="days.${i}.meals.${j}.name" value="${esc(m.name)}" placeholder="Jedlo">
+          <input type="text" data-path="days.${i}.meals.${j}.side" value="${esc(m.side)}" placeholder="Príloha">
+          <input type="number" step="0.01" min="0" data-path="days.${i}.meals.${j}.price" data-type="num" value="${esc(m.price)}">
+          <input type="text" data-path="days.${i}.meals.${j}.allergens" value="${esc(m.allergens)}" placeholder="1, 3">
+          <button class="x" type="button" data-act="del-meal" data-i="${i}" data-j="${j}" title="Zmazať jedlo">✕</button>
+        </div>`).join("")}
+      <p style="margin:10px 0 0">
+        <button class="btn ghost" type="button" data-act="add-meal" data-i="${i}">+ Pridať jedlo</button>
+        <button class="btn ghost" type="button" data-act="del-day" data-i="${i}">Zmazať deň</button>
+      </p>
+    </div>`).join("");
+}
+
+function setPath(obj, path, val) {
+  const parts = path.split(".");
+  const last = parts.pop();
+  const target = parts.reduce((o, k) => o[k], obj);
+  target[last] = val;
+}
+
+document.addEventListener("input", e => {
+  const p = e.target.dataset && e.target.dataset.path;
+  if (!p || !draft) return;
+  const t = e.target.dataset.type;
+  let v = e.target.value;
+  if (t === "num") v = parseFloat(String(v).replace(",", "."));
+  if (t === "list") v = v.split(";").map(s => s.trim()).filter(Boolean);
+  setPath(draft, p, v);
+});
+
+document.addEventListener("click", e => {
+  const b = e.target.closest("button[data-act]");
+  if (!b || !draft) return;
+  const i = +b.dataset.i, j = +b.dataset.j;
+  if (b.dataset.act === "del-meal") draft.days[i].meals.splice(j, 1);
+  if (b.dataset.act === "add-meal") draft.days[i].meals.push({ grams: "", name: "", side: "", price: 0, allergens: "" });
+  if (b.dataset.act === "del-day" && confirm("Zmazať celý deň?")) draft.days.splice(i, 1);
+  renderDraft();
+});
+
+// ---------- publikovanie ----------
+$("#publish").addEventListener("click", async () => {
+  if (!draft || !restaurant) return;
+  const days = draft.days
+    .map(d => ({ ...d, meals: (d.meals || []).filter(m => (m.name || "").trim()) }))
+    .filter(d => d.meals.length);
+  if (!days.length) return say("#publish-msg", "Menu je prázdne, nie je čo publikovať.", "err");
+  const bad = days.find(d => d.meals.some(m => !(Number(m.price) > 0)));
+  if (bad) return say("#publish-msg", `V dni „${bad.name}“ má niektoré jedlo nulovú alebo neplatnú cenu.`, "err");
+
+  $("#publish").disabled = true;
+  const payload = { ...draft, days };
+  const { error } = await sb.from("menus").upsert({ restaurant_id: restaurant.id, data: payload, updated_at: new Date().toISOString() });
+  $("#publish").disabled = false;
+  if (error) return say("#publish-msg", "Publikovanie zlyhalo: " + error.message, "err");
+  say("#publish-msg", "Hotovo, menu je publikované. Zákazníci ho vidia na stránke.", "good");
+  await loadCurrent();
+});
+
+// ---------- objednávky ----------
+async function loadOrders() {
+  const { data, error } = await sb.from("orders").select("*").eq("restaurant_id", restaurant.id).order("created_at", { ascending: false }).limit(30);
+  if (error) { $("#orders").textContent = "Objednávky sa nepodarilo načítať."; return; }
+  if (!data.length) { $("#orders").textContent = "Zatiaľ žiadne objednávky."; return; }
+  $("#orders").className = "";
+  $("#orders").innerHTML = data.map(o => `
+    <div class="order">
+      <b>${esc(new Date(o.created_at).toLocaleString("sk-SK"))}</b> · ${esc(o.customer.name)}, ${esc(o.customer.phone)}<br>
+      ${esc(o.customer.address)}${o.customer.note ? " · <i>" + esc(o.customer.note) + "</i>" : ""}
+      ${(o.items || []).map(d => `<div><b>${esc(d.day)}</b><ul>${d.items.map(i => `<li>${esc(i.q)}× ${esc(i.t)}</li>`).join("")}</ul></div>`).join("")}
+      <b>Spolu: ${eur(o.total)}</b>
+    </div>`).join("");
+}
+
+start();
+</script>
+</body>
+</html>
